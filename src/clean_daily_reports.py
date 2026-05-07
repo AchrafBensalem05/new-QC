@@ -13,7 +13,7 @@ HEADER_ROW = 11
 OUTPUT_CSV = Path("./clean_data/combined_daily_reports_20_25.csv")
 
 # Add the years you want to process here. 
-TARGET_YEARS = [2020, 2021, 2022, 2023, 2024, 2025] 
+TARGET_YEARS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025] 
 
 # Column Mapping Strategy
 COLUMN_MAP = {
