@@ -13,7 +13,7 @@ HEADER_ROW = 11
 OUTPUT_CSV = Path("./clean_data/combined_daily_reports_20_25.csv")
 
 # Add the years you want to process here. 
-TARGET_YEARS = [2016] 
+TARGET_YEARS = [2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025] 
 
 # Column Mapping Strategy
 COLUMN_MAP = {
@@ -75,7 +75,7 @@ def process_files():
     # ---------------------------------------------------------
     # MODIFIED SECTION: Pre-filter files based on TARGET_YEARS
     # ---------------------------------------------------------
-    raw_files = INPUT_ROOT.rglob("*.xlsx")
+    raw_files = list(INPUT_ROOT.rglob("*.xlsx")) + list(INPUT_ROOT.rglob("*.xls"))
     
     if TARGET_YEARS:
         files = [
@@ -106,8 +106,9 @@ def process_files():
             continue
             
         try:
+            engine = "xlrd" if path.suffix.lower() == ".xls" else "openpyxl"
             # Using pd.ExcelFile as a context manager for efficient sheet discovery
-            with pd.ExcelFile(path, engine='openpyxl') as xl:
+            with pd.ExcelFile(path, engine=engine) as xl:
                 target_sheet = None
                 # Check for sheet name variations
                 for s in xl.sheet_names:
@@ -121,11 +122,10 @@ def process_files():
                 
                 # Load the data from the identified sheet
                 df = pd.read_excel(
-                    xl, 
-                    sheet_name=target_sheet, 
-                    header=HEADER_ROW, 
-                    usecols="A:J",
-                    engine='openpyxl'
+                    xl,
+                    sheet_name=target_sheet,
+                    header=HEADER_ROW,
+                    usecols="A:J"
                 )
         except Exception as e:
             print(f"Error reading {path.name}: {e}")
