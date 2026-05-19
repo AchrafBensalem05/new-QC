@@ -165,6 +165,42 @@ def find_column(columns, candidates):
             return name
     return None
 
+def fix_daily_volume_headers(columns):
+    # Some files duplicate "DAILY OIL BBLS" where water should be; fix by order.
+    cols = list(columns)
+    def base_name(value):
+        text = normalize_col_name(value)
+        return re.sub(r"\.\d+$", "", text).strip()
+
+    normalized = [base_name(c).upper() for c in cols]
+    expected = [
+        "DAILY OIL BBLS",
+        "DAILY WATER BBLS",
+        "DAILY NETGAS SMCF",
+        "DAILY GLGAS SMCF",
+    ]
+
+    anchor_index = None
+    for anchor in ("GRAV API", "GRAVITY"):
+        if anchor in normalized:
+            anchor_index = normalized.index(anchor)
+            break
+
+    if anchor_index is not None:
+        start = anchor_index + 1
+        end = start + len(expected)
+        if end <= len(cols):
+            window = normalized[start:end]
+            if window != expected:
+                for offset, name in enumerate(expected):
+                    cols[start + offset] = name
+        return cols
+
+    oil_indices = [i for i, v in enumerate(normalized) if v == "DAILY OIL BBLS"]
+    if len(oil_indices) >= 2 and "DAILY WATER BBLS" not in normalized:
+        cols[oil_indices[1]] = "DAILY WATER BBLS"
+    return cols
+
 def parse_sheet(df):
     header_idx = locate_header_index(df)
     if header_idx is None:
@@ -251,6 +287,8 @@ def clean_sheet(path):
         "PERC": "BSW",
     }
     data = data.rename(columns={k: v for k, v in rename_map.items() if k in data.columns})
+
+    data.columns = make_unique_columns(fix_daily_volume_headers(data.columns))
 
     drop_cols = ["...", "WELL TEST DATA", "Column19", "Column1", "Column26"]
     data = data.drop(columns=[c for c in drop_cols if c in data.columns], errors="ignore")
